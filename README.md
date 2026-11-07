@@ -47,7 +47,7 @@ The app is unsigned. On first launch, right-click it and choose **Open**, or run
 xattr -cr /Applications/Ruled.app
 ```
 
-**iPhone / iPad (iOS 15+):** Ruled isn't on the App Store, and Apple only lets signed apps onto a device. CI always builds an unsigned **Simulator** app (artifact `Ruled-iOS-Simulator`), and a signed `.ipa` (artifact `Ruled-iOS`) when you've set up signing. Your options, cheapest first:
+**iPhone / iPad (iOS 15+):** Ruled isn't on the App Store, and Apple only lets signed apps onto a device. CI always builds an unsigned **Simulator** app (artifact `Ruled-iOS-Simulator`) and an unsigned device `.ipa` for sideloading tools (artifact `Ruled-iOS-unsigned`), plus a signed `.ipa` (artifact `Ruled-iOS`) when you've set up signing. Your options, cheapest first:
 
 1. **Xcode with a free Apple ID (sideload, no CI secrets).** On a Mac with Xcode and the Rust iOS target (`rustup target add aarch64-apple-ios`):
    ```bash
@@ -57,7 +57,7 @@ xattr -cr /Applications/Ruled.app
    npx tauri ios build --open   # opens Xcode
    ```
    In Xcode: select the `ruled_iOS` target → **Signing & Capabilities** → tick *Automatically manage signing*, pick your Personal Team, and change the bundle identifier if `app.ruled.notecards` is taken. Plug in the iPhone, choose it as the run destination and press Run. On the phone, trust the developer under **Settings → General → VPN & Device Management** (and turn on **Developer Mode** under Privacy & Security, iOS 16+). Free-account apps **expire after 7 days**; run it from Xcode again to renew. Your cards survive a reinstall as long as you don't delete the app.
-2. **AltStore / SideStore** (free Apple ID, no Xcode): download a signed-by-nobody `.ipa`… which CI only produces with signing secrets, so in practice build one with option 1 (**Product → Archive**, export) and open it in AltStore. AltStore re-signs it with your Apple ID and refreshes the 7-day signature in the background over Wi-Fi.
+2. **AltStore / SideStore** (free Apple ID, no Xcode needed after setup): download the `Ruled-iOS-unsigned` artifact, unzip it to get `Ruled-unsigned.ipa`, and open that in AltStore/SideStore on the phone (**My Apps → +**). They sign it with your Apple ID and refresh the 7-day signature in the background, so it doesn't lapse as long as the refresh runs every week. (Installing AltStore itself needs AltServer on a Mac or PC once; SideStore needs a one-time pairing file.)
 3. **Paid Apple Developer account ($99/yr) + CI.** Signatures last a year. Either register your devices' UDIDs and use an **Ad Hoc** profile (install the `.ipa` with Apple Configurator, Finder, or Xcode's *Devices* window), or use an **App Store** profile and let CI push every `main` build to **TestFlight** (install with the TestFlight app; builds last 90 days, up to 100 internal testers, no device registration).
 
 To run the Simulator build: unzip the artifact, boot a simulator and `xcrun simctl install booted Ruled.app && xcrun simctl launch booted app.ruled.notecards`.

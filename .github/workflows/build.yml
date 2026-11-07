@@ -3,7 +3,7 @@ name: Build apps
 on:
   workflow_dispatch:
   push:
-    branches: [main, ios]
+    branches: [main]
     tags: ['v*']
   pull_request:
     branches: [main]

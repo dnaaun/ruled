@@ -191,8 +191,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
-        with: { path: src }
       - uses: actions/download-artifact@v5
         with: { path: artifacts, merge-multiple: true }
       - name: Publish release
@@ -213,8 +211,6 @@ jobs:
 
           **iOS:** `Ruled.ipa` (when signing secrets are configured) installs on registered devices; `Ruled-unsigned.ipa` can be sideloaded with AltStore/SideStore. See the README.
           NOTES
-          cd ../src
-          git tag "$TAG" "$GITHUB_SHA"
-          git push origin "refs/tags/$TAG"
-          cd ../artifacts
-          gh release create "$TAG" $files --repo "$GITHUB_REPOSITORY" --title "Ruled ${TAG#v}" --notes-file ../notes.md --latest
+          # the release API creates the tag itself (a git tag push from CI is refused when the
+          # tagged commit changes workflow files)
+          gh release create "$TAG" $files --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Ruled ${TAG#v}" --notes-file ../notes.md --latest

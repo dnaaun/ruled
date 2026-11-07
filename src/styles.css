@@ -594,7 +594,13 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 .mac-app .topbar { padding-left: 92px; padding-top: 12px; }
 .mac-app .studytop { padding-left: 92px; padding-top: 12px; }
 
-/* iOS / iPadOS WebKit zooms the page when a focused field's text is under 16px; keep every field at 16px or more */
+.tags-input { font-size: 14px; }
+
+/* iOS / iPadOS WebKit zooms the page when a focused field's text is under 16px; keep every field at 16px
+   or more there (any iOS WebKit, even with a trackpad) and on touch screens generally */
 @supports (-webkit-touch-callout: none) {
+  input, textarea, select, .input, .textarea, .select { font-size: max(16px, 1em); }
+}
+@media (pointer: coarse) {
   input, textarea, select, .input, .textarea, .select { font-size: max(16px, 1em); }
 }

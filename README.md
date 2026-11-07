@@ -34,7 +34,7 @@ Advanced: to use your own relays, run `localStorage.setItem('ruled:relays', 'wss
 
 **Android:** install `release/Ruled.apk` (allow "install unknown apps").
 
-**macOS:** run the GitHub Actions workflow (**Actions → Build apps → Run workflow**, or push a `v*` tag) and download the `.dmg` artifact. To build locally instead:
+**macOS:** run the GitHub Actions workflow (runs on every push to `main`; or **Actions → Build apps → Run workflow**) and download the `.dmg` artifact. To build locally instead:
 
 ```bash
 npm install

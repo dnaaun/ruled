@@ -101,6 +101,24 @@ jobs:
           name: Ruled-iOS-Simulator
           path: release/Ruled-iOS-Simulator.zip
 
+      # 1b. Unsigned device build, for sideloading tools (AltStore / SideStore) that re-sign with your own
+      # Apple ID. Best effort: Tauri's export step needs signing, so take the .app from the archive.
+      - name: Unsigned device IPA (for AltStore/SideStore)
+        id: unsigned
+        continue-on-error: true
+        run: |
+          npx tauri ios build --target aarch64 --ci -- CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" || echo "::warning::tauri ios build exited non-zero (expected without signing); looking for the archive"
+          archive=$(find src-tauri/gen/apple/build -maxdepth 3 -type d -name '*.xcarchive' | head -n1)
+          app=$(find "${archive:-/nonexistent}/Products/Applications" -maxdepth 1 -type d -name '*.app' 2>/dev/null | head -n1)
+          [ -n "$app" ] || { echo "::warning::no archived device .app; skipping unsigned IPA"; find src-tauri/gen/apple/build -maxdepth 3; exit 1; }
+          rm -rf Payload && mkdir Payload && cp -R "$app" Payload/
+          mkdir -p release && zip -qry release/Ruled-unsigned.ipa Payload && ls -l release/Ruled-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        if: steps.unsigned.outcome == 'success'
+        with:
+          name: Ruled-iOS-unsigned
+          path: release/Ruled-unsigned.ipa
+
       # 2. When signing secrets are set: a signed .ipa for real devices (and TestFlight, with an API key).
       - name: Check signing secrets
         id: signing

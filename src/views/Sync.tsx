@@ -137,6 +137,8 @@ export function SyncView() {
           </div>
         </section>
 
+        <TurnPanel />
+
         <section class="panel paper">
           <h3>How it works</h3>
           <ol class="howto" style={{ paddingLeft: '18px', margin: 0 }}>
@@ -148,5 +150,53 @@ export function SyncView() {
         </section>
       </div>
     </main>
+  )
+}
+
+function TurnPanel() {
+  const st = useSync()
+  const [t, setT] = useState(() => sync.turn)
+  const [open, setOpen] = useState(() => !!sync.turn.urls || !!st.error)
+  const saved = sync.turn
+  const dirty = t.urls !== saved.urls || t.username !== saved.username || t.credential !== saved.credential
+  return (
+    <section class="panel paper">
+      <h3>Connection relay (TURN)</h3>
+      <p>
+        Most of the time devices connect directly. If they find each other but can’t connect (cellular data, strict routers),
+        a TURN relay passes the encrypted traffic between them. You don’t run it: free hosted ones exist, e.g.
+        Metered’s Open Relay (metered.ca) or Cloudflare’s TURN service. Setting it up on <b>one</b> of your devices is usually enough.
+      </p>
+      {!open ? (
+        <button class="btn" onClick={() => setOpen(true)}>Set up a relay</button>
+      ) : (
+        <form onSubmit={async (e) => {
+          e.preventDefault()
+          await sync.setTurn(t)
+          toast(t.urls.trim() ? 'Relay saved — reconnecting' : 'Relay removed — reconnecting')
+        }}>
+          <label class="field">
+            <span>TURN URLs</span>
+            <input class="input mono" style={{ fontSize: '14px' }} placeholder="turn:relay.example.com:443?transport=tcp" value={t.urls}
+              onInput={(e) => setT({ ...t, urls: e.currentTarget.value })} autoCapitalize="off" autoComplete="off" spellcheck={false} />
+            <div class="hint">Space-separated; starts with turn: or turns:. Copy them from your provider’s dashboard.</div>
+          </label>
+          <div class="opts">
+            <label class="field">
+              <span>Username</span>
+              <input class="input mono" style={{ fontSize: '14px' }} value={t.username} onInput={(e) => setT({ ...t, username: e.currentTarget.value })} autoCapitalize="off" autoComplete="off" spellcheck={false} />
+            </label>
+            <label class="field">
+              <span>Credential</span>
+              <input class="input mono" type="password" style={{ fontSize: '14px' }} value={t.credential} onInput={(e) => setT({ ...t, credential: e.currentTarget.value })} autoComplete="off" />
+            </label>
+          </div>
+          <div class="row">
+            <button class="btn primary" type="submit" disabled={!dirty}>Save &amp; reconnect</button>
+            {saved.urls && <span class="small muted mono">relay active on this device</span>}
+          </div>
+        </form>
+      )}
+    </section>
   )
 }

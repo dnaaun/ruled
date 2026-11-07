@@ -31,7 +31,24 @@ async function sha256(text: string) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-async function trysteroTransport(code: string, onError: (e: string) => void): Promise<Transport> {
+export interface TurnSettings { urls: string; username: string; credential: string }
+
+export function turnServers(t: TurnSettings | undefined): RTCIceServer[] {
+  if (!t?.urls?.trim()) return []
+  const urls = t.urls.split(/[\s,]+/).map((u) => u.trim()).filter((u) => /^turns?:/.test(u))
+  return urls.length ? [{ urls, username: t.username || undefined, credential: t.credential || undefined }] : []
+}
+
+function friendlyError(raw: string): string {
+  if (/after exchanging SDP|TURN/i.test(raw)) {
+    return 'Found another device, but couldn’t open a direct connection to it. This happens when the devices are on different networks behind strict routers (common on cellular data and some office or campus Wi-Fi). Put both on the same Wi-Fi, or add a TURN relay below.'
+  }
+  if (/password|decrypt/i.test(raw)) return 'Another device is using a different code for this circle.'
+  if (/handshake|timeout/i.test(raw)) return 'Found another device, but it didn’t answer in time. It will retry automatically.'
+  return raw
+}
+
+async function trysteroTransport(code: string, onError: (e: string) => void, turn: RTCIceServer[]): Promise<Transport> {
   const { joinRoom } = await import('trystero')
   const secret = code.replace(/-/g, '')
   const roomId = (await sha256(`room:${secret}`)).slice(0, 40)
@@ -42,8 +59,13 @@ async function trysteroTransport(code: string, onError: (e: string) => void): Pr
     const raw = localStorage.getItem('ruled:relays')
     if (raw) relayUrls = raw.split(/[\s,]+/).filter((u) => /^wss?:\/\//.test(u))
   } catch {}
-  const room = joinRoom({ appId: APP_ID, password, ...(relayUrls?.length ? { relayConfig: { urls: relayUrls } } : {}) }, roomId, {
-    onJoinError: (d: { error?: unknown }) => onError(String(d?.error ?? 'Could not connect to a device')),
+  const room = joinRoom({
+    appId: APP_ID,
+    password,
+    ...(relayUrls?.length ? { relayConfig: { urls: relayUrls } } : {}),
+    ...(turn.length ? { turnConfig: turn } : {}),
+  }, roomId, {
+    onJoinError: (d: { error?: unknown }) => onError(friendlyError(String(d?.error ?? 'Could not connect to a device'))),
   } as never)
   const action = room.makeAction<any>('sync')
   const t: Transport = {
@@ -109,7 +131,7 @@ class SyncManager {
       const transport = await trysteroTransport(code, (e) => {
         this.error = e
         this.emit()
-      })
+      }, turnServers(this.turn))
       this.engine = new SyncEngine(store, transport, () => this.deviceName)
       this.engine.onStatus = () => {
         this.error = null
@@ -134,6 +156,18 @@ class SyncManager {
     await this.stop()
     store.setKv('syncCode', code)
     if (!code) store.setKv('syncDevices', {})
+    await this.start()
+  }
+
+  get turn(): TurnSettings {
+    return store.getKv<TurnSettings>('turn') ?? { urls: '', username: '', credential: '' }
+  }
+
+  /** Save TURN relay settings (this device only) and reconnect. */
+  async setTurn(t: TurnSettings) {
+    store.setKv('turn', { urls: t.urls.trim(), username: t.username.trim(), credential: t.credential.trim() })
+    await this.stop()
+    this.error = null
     await this.start()
   }
 

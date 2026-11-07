@@ -1,0 +1,106 @@
+{
+ "crt": 1794024000,
+ "today": 0,
+ "cards": {
+  "bonjour#0": {
+   "type": 1,
+   "queue": 1,
+   "due": 1794042993,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 2,
+   "lapses": 0,
+   "left": 1,
+   "odid": 0
+  },
+  "chat#0": {
+   "type": 1,
+   "queue": 1,
+   "due": 1794040225,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 1,
+   "lapses": 0,
+   "left": 2,
+   "odid": 0
+  },
+  "chat#1": {
+   "type": 0,
+   "queue": 0,
+   "due": 2,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 0,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  },
+  "Paris#0": {
+   "type": 2,
+   "queue": -1,
+   "due": 3,
+   "ivl": 3,
+   "factor": 2500,
+   "reps": 1,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  },
+  "Rome#0": {
+   "type": 3,
+   "queue": 1,
+   "due": 1794039740,
+   "ivl": 1,
+   "factor": 2300,
+   "reps": 2,
+   "lapses": 1,
+   "left": 1,
+   "odid": 0
+  },
+  "Rome#1": {
+   "type": 0,
+   "queue": 0,
+   "due": 4,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 0,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  },
+  "{{c1::Canber#0": {
+   "type": 2,
+   "queue": -3,
+   "due": 5,
+   "ivl": 5,
+   "factor": 2500,
+   "reps": 1,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  },
+  "{{c1::Canber#1": {
+   "type": 0,
+   "queue": 0,
+   "due": 5,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 0,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  },
+  "untouched#0": {
+   "type": 0,
+   "queue": 0,
+   "due": 6,
+   "ivl": 0,
+   "factor": 0,
+   "reps": 0,
+   "lapses": 0,
+   "left": 0,
+   "odid": 0
+  }
+ },
+ "revlog": 7
+}

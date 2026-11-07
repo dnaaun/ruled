@@ -575,3 +575,27 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 /* macOS desktop app (overlay title bar) */
 .mac-app .topbar { padding-left: 92px; padding-top: 12px; }
 .mac-app .studytop { padding-left: 92px; padding-top: 12px; }
+
+/* ------------------------------------------------------------------ anki import */
+
+.anki-import .eyebrow { margin-bottom: 6px; }
+.anki-import .file { background: color-mix(in srgb, var(--ink) 7%, transparent); padding: 2px 8px; border-radius: var(--radius); color: var(--ink-2); word-break: break-all; }
+.anki-notes { margin: 0 0 22px; padding: 0 0 0 18px; color: var(--ink-2); line-height: 1.6; }
+.anki-notes li { margin-bottom: 4px; }
+.anki-notes li::marker { color: var(--margin); }
+.anki-progress { padding: 8px 0 4px; }
+.anki-progress .bar { height: 8px; border-radius: 8px; overflow: hidden; background: color-mix(in srgb, var(--ink) 8%, transparent); margin: 18px 0 10px; }
+.anki-progress .bar span { display: block; height: 100%; background: var(--review); border-radius: 8px; transition: width 0.2s ease; }
+.anki-progress .bar.indeterminate span { width: 30%; animation: anki-slide 1.1s ease-in-out infinite alternate; }
+@keyframes anki-slide { from { transform: translateX(-10%); } to { transform: translateX(245%); } }
+.anki-facts { padding: 18px 0; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--edge); border-bottom: 1px solid var(--edge); margin: 14px 0 16px; }
+@media (max-width: 520px) { .anki-facts { grid-template-columns: 1fr 1fr; } }
+.anki-decks { list-style: none; margin: 0 0 16px; padding: 0; }
+.anki-decks li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--rule); }
+.anki-decks a { color: var(--ink); text-decoration: none; font-family: var(--font-display); font-size: 17px; }
+.anki-decks a:hover { color: var(--margin); }
+.anki-skipped { margin: 0 0 18px; }
+.anki-skipped summary { cursor: pointer; color: var(--ink-2); font-family: var(--font-mono); }
+.anki-skipped ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.6; }
+.anki-error { font-family: var(--font-mono); font-size: 13px; color: var(--learn); background: color-mix(in srgb, var(--learn) 9%, transparent); padding: 10px 12px; border-radius: var(--radius); }
+.media-missing { font-family: var(--font-mono); font-size: 0.75em; color: var(--ink-3); border: 1px dashed var(--ink-3); border-radius: var(--radius); padding: 0.1em 0.45em; }

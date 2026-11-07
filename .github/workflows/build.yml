@@ -107,7 +107,13 @@ jobs:
         id: unsigned
         continue-on-error: true
         run: |
-          npx tauri ios build --target aarch64 --ci -- CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" || echo "::warning::tauri ios build exited non-zero (expected without signing); looking for the archive"
+          # disable signing in the generated project for this build only (restored afterwards)
+          pbx=$(ls src-tauri/gen/apple/*.xcodeproj/project.pbxproj)
+          cp "$pbx" "$RUNNER_TEMP/project.pbxproj"
+          perl -0pi -e 's/buildSettings = \{/buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;/g' "$pbx"
+          rm -rf src-tauri/gen/apple/build/*.xcarchive
+          npx tauri ios build --target aarch64 --ci || echo "::warning::tauri ios build exited non-zero (expected: export needs signing); looking for the archive"
+          cp "$RUNNER_TEMP/project.pbxproj" "$pbx"
           archive=$(find src-tauri/gen/apple/build -maxdepth 3 -type d -name '*.xcarchive' | head -n1)
           app=$(find "${archive:-/nonexistent}/Products/Applications" -maxdepth 1 -type d -name '*.app' 2>/dev/null | head -n1)
           [ -n "$app" ] || { echo "::warning::no archived device .app; skipping unsigned IPA"; find src-tauri/gen/apple/build -maxdepth 3; exit 1; }

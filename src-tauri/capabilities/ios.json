@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "ios",
+  "description": "iOS: write backups into the app's own Documents folder so the share/export picker can hand them out",
+  "platforms": ["iOS"],
+  "windows": ["main"],
+  "permissions": ["fs:scope-document"]
+}

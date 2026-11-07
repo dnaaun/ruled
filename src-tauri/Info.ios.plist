@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged by the Tauri CLI into the generated gen/apple Info.plist. -->
+<plist version="1.0">
+<dict>
+	<!-- Show the app's Documents folder (exported backups) in Files → On My iPhone → Ruled -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<!-- Only standard, exempt encryption (TLS / WebRTC DTLS), so TestFlight skips the export-compliance prompt -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>

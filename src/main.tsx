@@ -2,12 +2,13 @@ import { render } from 'preact'
 import { App } from './app'
 import { store } from './lib/store'
 import { sync } from './lib/sync/p2p'
+import { isIOS, isMacApp } from './lib/platform'
 import './styles.css'
 
-// macOS app: content runs under the transparent title bar, leave room for the traffic lights
-if ('__TAURI_INTERNALS__' in window && /Mac/.test(navigator.userAgent) && !/Mobile|Android/.test(navigator.userAgent)) {
-  document.documentElement.classList.add('mac-app')
-}
+// macOS app: content runs under the transparent title bar, leave room for the traffic lights.
+// (Not on iPad, whose user agent also says "Macintosh".)
+if (isMacApp) document.documentElement.classList.add('mac-app')
+if (isIOS) document.documentElement.classList.add('ios')
 
 async function boot() {
   await store.open()

@@ -3,7 +3,28 @@ import type { Store } from './store'
 
 export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
+const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+const touchPoints = typeof navigator !== 'undefined' ? navigator.maxTouchPoints ?? 0 : 0
+/**
+ * iPhone/iPad. iPadOS (13+) reports a desktop "Macintosh" user agent by default, so an Apple UA
+ * with a multi-touch screen is an iPad: no Mac has a touchscreen.
+ */
+export const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1)
+/** The macOS desktop app (not iPadOS, not the macOS browser). */
+export const isMacApp = isTauri && /Mac/.test(ua) && !isIOS && !/Mobile|Android/.test(ua)
+
 export async function saveTextFile(filename: string, text: string): Promise<boolean> {
+  if (isTauri && isIOS) {
+    // iOS has no "pick a path, then write to it" dialog. The dialog plugin's save() presents
+    // UIDocumentPicker's "export" mode on a file it expects in the app's Documents folder (creating
+    // an empty one if it's missing) and copies that file to wherever the user picks. So write the
+    // backup there first; the picker then exports the real contents. The copy left in Documents is
+    // also visible in Files → On My iPhone → Ruled (UIFileSharingEnabled in Info.ios.plist).
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const { writeTextFile, BaseDirectory } = await import('@tauri-apps/plugin-fs')
+    await writeTextFile(filename, text, { baseDir: BaseDirectory.Document })
+    return (await save({ defaultPath: filename })) != null
+  }
   if (isTauri) {
     const { save } = await import('@tauri-apps/plugin-dialog')
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')

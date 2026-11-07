@@ -3,8 +3,14 @@ name: Build apps
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, ios]
     tags: ['v*']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -60,3 +66,95 @@ jobs:
         with:
           name: Ruled-Android
           path: release/*.apk
+
+  ios:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-apple-ios,aarch64-apple-ios-sim' }
+      - name: Install XcodeGen
+        run: command -v xcodegen || brew install xcodegen
+      - run: npm ci
+      # gen/apple is not committed: it's regenerated from tauri.conf.json (+ Info.ios.plist) by the
+      # same CLI version that builds it, so it never drifts from the config or the CLI's templates.
+      - name: Generate Xcode project
+        run: npx tauri ios init --ci
+
+      # 1. Always: a Simulator build. Needs no Apple account or signing; proves the app compiles and links.
+      - name: Build for iOS Simulator
+        run: npx tauri ios build --target aarch64-sim --ci
+      - name: Package Simulator app
+        run: |
+          app=$(find src-tauri/gen/apple/build -type d -name '*.app' -path '*sim*' -prune | head -n1)
+          [ -n "$app" ] || app=$(find src-tauri/gen/apple/build -type d -name '*.app' -prune | head -n1)
+          [ -n "$app" ] || { echo "::error::no .app found"; find src-tauri/gen/apple/build -maxdepth 4; exit 1; }
+          echo "Simulator app: $app"
+          mkdir -p release
+          ditto -c -k --keepParent "$app" release/Ruled-iOS-Simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ruled-iOS-Simulator
+          path: release/Ruled-iOS-Simulator.zip
+
+      # 2. When signing secrets are set: a signed .ipa for real devices (and TestFlight, with an API key).
+      - name: Check signing secrets
+        id: signing
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD }}
+        run: |
+          if [ -n "$CERT" ] && [ -n "$CERT_PASSWORD" ] && [ -n "$PROFILE" ] && [ -n "$TEAM" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::iOS signing secrets not set; skipping the signed .ipa (Simulator build only)."
+          fi
+          testflight=false
+          [ -n "$API_KEY_ID" ] && [ -n "$API_ISSUER" ] && [ -n "$API_KEY_P8" ] && testflight=true
+          # The export method must match the provisioning profile's type:
+          # App Store profile → app-store-connect (TestFlight), Ad Hoc → release-testing, Development → debugging.
+          method="$EXPORT_METHOD"
+          [ -n "$method" ] || { $testflight && method=app-store-connect || method=release-testing; }
+          echo "method=$method" >> "$GITHUB_OUTPUT"
+          [ "$method" = app-store-connect ] || testflight=false
+          echo "testflight=$testflight" >> "$GITHUB_OUTPUT"
+      - name: Build signed IPA
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          # Tauri reads these to import the certificate and profile and switch the project to manual signing
+          IOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+        run: |
+          npx tauri ios build --target aarch64 --ci \
+            --export-method "${{ steps.signing.outputs.method }}" \
+            --build-number "${{ github.run_number }}"
+          mkdir -p release
+          find src-tauri/gen/apple/build -name '*.ipa' -exec cp {} release/Ruled.ipa \;
+          ls -l release/Ruled.ipa
+      - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.enabled == 'true'
+        with:
+          name: Ruled-iOS
+          path: release/Ruled.ipa
+      - name: Upload to TestFlight
+        if: steps.signing.outputs.enabled == 'true' && steps.signing.outputs.testflight == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        env:
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$API_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_$API_KEY_ID.p8
+          xcrun altool --upload-app --type ios --file release/Ruled.ipa --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER"

@@ -40,6 +40,36 @@ export async function openTextFile(extensions: string[]): Promise<string | null>
   })
 }
 
+export interface PickedFile { name: string; data: Uint8Array }
+
+/** Pick a file and read it as bytes. Browser: <input type=file>; Tauri: native dialog + fs readFile. */
+export async function openBinaryFile(extensions: string[]): Promise<PickedFile | null> {
+  if (isTauri) {
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const { readFile } = await import('@tauri-apps/plugin-fs')
+    // Android's picker filters by MIME type and knows nothing about .apkg, so don't filter there
+    const android = /android/i.test(navigator.userAgent)
+    const path = await open({ multiple: false, directory: false, filters: android ? undefined : [{ name: 'Files', extensions }] })
+    if (!path || Array.isArray(path)) return null
+    const p = String(path)
+    let name = p.split(/[\\/]/).pop() || p
+    try {
+      name = decodeURIComponent(name)
+    } catch { /* keep as is */ }
+    return { name, data: await readFile(p) }
+  }
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = extensions.map((e) => `.${e}`).join(',')
+    input.onchange = async () => {
+      const f = input.files?.[0]
+      resolve(f ? { name: f.name, data: new Uint8Array(await f.arrayBuffer()) } : null)
+    }
+    input.click()
+  })
+}
+
 /** A backup file is the full record log (including deletions), so importing one is a merge, never a clobber. */
 export function exportBackup(s: Store): string {
   const records: Record<string, unknown[]> = {}

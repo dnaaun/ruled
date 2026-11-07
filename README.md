@@ -14,7 +14,22 @@ Local-first spaced-repetition notecards for macOS and Android (and any browser).
   - all of Anki's deck options, with Anki's defaults
 - Notes: Basic, Basic + reversed, and Cloze (`{{c1::answer::hint}}`), with Markdown formatting
 - Study screen with keyboard shortcuts (`space`, `1`–`4`, `z` undo, `e` edit, `-` bury, `@` suspend), a card browser with search, tag (`#tag`) and state filters, suspend/forget, stats (year heatmap, 30-day forecast, true retention), and import from text/CSV (Anki's "Notes in Plain Text" export works)
+- **Import from Anki** (`.apkg` deck packages and `.colpkg` collection backups, old and new formats), keeping due dates, intervals, ease, learning steps, suspended cards, review history and deck options, so you keep studying where you left off. See below.
 - Light and dark themes
+
+## Moving from Anki
+
+On the Stacks page, choose **Import from Anki** and pick a file exported from Anki with **File → Export…** (*Anki Deck Package* or *Anki Collection Package*, with *Include scheduling information* ticked). Everything is read on the device; nothing is uploaded.
+
+- **Formats:** `collection.anki21b` (zstd-compressed, Anki 2.1.50+), `collection.anki21` and `collection.anki2` (legacy exports and Anki 2.0).
+- **Note types:** cloze note types become Cloze notes (`{{c1::…}}` kept as is). Two-template "front / back + reversed" types become Basic + reversed (or Basic when the optional reverse card doesn't exist). Anything else becomes Basic: the first field on the front, the other displayed fields on the back. Only the first card of a note type with more than two templates is kept.
+- **Scheduling:** new / learning / review / relearning state, due dates (converted from days-since-collection-creation to Ruled's calendar days), interval, ease, reps, lapses and remaining learning steps. Suspended cards stay suspended; buried cards come back unburied; cards in filtered decks go back to their home deck.
+- **History:** learn, review and relearn entries (with their rating, intervals, ease and answer time). Manual reschedules are left out.
+- **Decks and options:** one stack per Anki deck that has cards, named with the full `Parent::Child` path. Each gets its Anki preset's limits, steps, intervals, ease settings and leech settings.
+- **Content:** fields stay HTML, which Ruled renders. Tags are kept. Small images (up to 300 KB each, 25 MB per import) are embedded in the note; larger ones show a placeholder. Sounds are removed.
+- **Importing again merges.** Notes are identified by Anki's note GUID, so nothing is duplicated. A card takes Anki's scheduling again only if it has more reviews in Anki than in Ruled. A note is updated only if it changed in Anki after its last edit in Ruled.
+
+Not carried over: audio and video, LaTeX/MathJax rendering, custom card templates and styling, FSRS memory state (cards keep their SM-2 interval and ease), and Anki's per-collection "next day starts at" setting (Ruled uses 4 AM).
 
 ## Sync without a server
 
@@ -53,7 +68,8 @@ xattr -cr /Applications/Ruled.app
 
 ```bash
 npm install
-npm test             # scheduler + sync tests
+npm test             # scheduler, sync and Anki import tests
+npm run build && npm run e2e   # Playwright: import an .apkg through the UI
 npm run dev          # web, at http://localhost:1420
 npx tauri dev        # desktop app
 npx tauri android build --apk --target aarch64 && scripts/sign-apk.sh
@@ -68,10 +84,11 @@ src/lib/scheduler/   Anki scheduler port (states, fuzz, answering, timing)
 src/lib/store.ts     IndexedDB store, HLC-stamped records, tombstones
 src/lib/sync/        replication protocol (engine.ts) + WebRTC transport (p2p.ts)
 src/lib/ops.ts       notes → cards, answering/undo, study queue, import
+src/lib/anki/        Anki package reader (zip, zstd, SQLite via sql.js) and mapping to Ruled
 src/views/           UI
 src-tauri/           Tauri v2 shell (macOS + Android)
 ```
 
 ## Not included
 
-FSRS (Anki's optional alternative scheduler), the load balancer, filtered decks, sibling burying (off by default in Anki), images/audio, and `.apkg` import.
+FSRS (Anki's optional alternative scheduler), the load balancer, filtered decks, sibling burying (off by default in Anki), audio, and adding images in the editor (images imported from Anki are embedded in the note).

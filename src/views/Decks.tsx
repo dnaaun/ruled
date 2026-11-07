@@ -4,6 +4,7 @@ import { buildQueue, createDeck } from '../lib/ops'
 import { dayNumber, timing } from '../lib/scheduler/timing'
 import type { Store } from '../lib/store'
 import { seedSampleDeck } from '../lib/sample'
+import { AnkiImportModal } from './AnkiImport'
 
 export function streak(s: Store): number {
   const days = new Set(s.all('revlog').map((r) => dayNumber(r.time)))
@@ -22,6 +23,7 @@ export function Decks() {
   useTick(30_000)
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
+  const [ankiOpen, setAnkiOpen] = useState(false)
   const decks = s.all('decks').sort((a, b) => a.name.localeCompare(b.name))
   const t = timing()
   const info = decks.map((d) => ({ d, q: buildQueue(s, d.id, t) }))
@@ -67,6 +69,7 @@ export function Decks() {
           </div>
           <div class="row">
             <button class="btn" onClick={() => go(`deck/${seedSampleDeck(s).id}`)}>Try a sample stack</button>
+            <button class="btn" onClick={() => setAnkiOpen(true)}><Icon.upload /> Import from Anki</button>
             <button class="btn primary" onClick={() => setNaming(true)}><Icon.plus /> New stack</button>
           </div>
         </div>
@@ -121,6 +124,12 @@ export function Decks() {
           </button>
         )}
       </div>
+      {decks.length > 0 && (
+        <div class="toolrow">
+          <button class="btn ghost" onClick={() => setAnkiOpen(true)}><Icon.upload /> Import from Anki</button>
+        </div>
+      )}
+      {ankiOpen && <AnkiImportModal onClose={() => setAnkiOpen(false)} />}
     </main>
   )
 }

@@ -161,7 +161,7 @@ export function Editor({ deckId, noteId, back }: { deckId?: string; noteId?: str
           </div>
           <label class="field">
             <span>Tags</span>
-            <input class="input mono" style={{ fontSize: '14px' }} value={tags} onInput={(e) => setTags(e.currentTarget.value)} placeholder="space separated" />
+            <input class="input mono tags-input" value={tags} onInput={(e) => setTags(e.currentTarget.value)} placeholder="space separated" />
           </label>
           <div class="row">
             <button class="btn primary big" onClick={save} disabled={!valid}>{existing ? 'Save changes' : kind === 'cloze' || kind === 'reversed' ? `Add ${ords.length} card${ords.length > 1 ? 's' : ''}` : 'Add card'}</button>

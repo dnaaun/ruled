@@ -8,3 +8,4 @@ src-tauri/gen/android/build
 *.jks
 release/
 ANDROID_KEYSTORE_B64.txt
+src-tauri/gen/apple

@@ -39,6 +39,8 @@
   --radius: 3px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   color-scheme: light;
 }
 
@@ -91,7 +93,16 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* no double-tap-to-zoom (and its 300ms click delay); pinch zoom still works */
+  touch-action: manipulation;
+  /* no rubber-band bounce past the page edges (iOS 16+ WebKit) */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* long-press on a control shouldn't select its label or open the link callout */
+button, .btn, .tabbar a, .nav a, .ans { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 body {
   background-color: var(--desk);
   background-image:
@@ -117,7 +128,7 @@ a { color: inherit; }
 .topbar {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 24px;
-  padding: calc(14px + var(--safe-top)) 28px 14px;
+  padding: calc(14px + var(--safe-top)) max(28px, var(--safe-right)) 14px max(28px, var(--safe-left));
   background: color-mix(in srgb, var(--desk) 82%, transparent);
   backdrop-filter: blur(10px) saturate(1.2);
   -webkit-backdrop-filter: blur(10px) saturate(1.2);
@@ -158,18 +169,23 @@ a { color: inherit; }
 .iconbtn:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
 .iconbtn svg { width: 18px; height: 18px; }
 
-main.page { width: 100%; max-width: 1080px; margin: 0 auto; padding: 36px 28px 120px; flex: 1; }
+main.page {
+  width: 100%; max-width: 1080px; margin: 0 auto; flex: 1;
+  padding: 36px max(28px, var(--safe-right)) calc(120px + var(--safe-bottom)) max(28px, var(--safe-left));
+}
 main.page.narrow { max-width: 760px; }
 
 .tabbar { display: none; }
 
 @media (max-width: 720px) {
-  .topbar { padding: calc(10px + var(--safe-top)) 16px 10px; gap: 8px; }
+  .topbar { padding: calc(10px + var(--safe-top)) max(16px, var(--safe-right)) 10px max(16px, var(--safe-left)); gap: 8px; }
   .topbar .nav { display: none; }
   .topbar .spacer { margin-left: auto; }
-  main.page { padding: 22px 16px calc(110px + var(--safe-bottom)); }
+  main.page { padding: 22px max(16px, var(--safe-right)) calc(110px + var(--safe-bottom)) max(16px, var(--safe-left)); }
   .tabbar {
-    display: flex; position: fixed; left: 10px; right: 10px; bottom: calc(10px + var(--safe-bottom)); z-index: 30;
+    display: flex; position: fixed; left: max(10px, var(--safe-left)); right: max(10px, var(--safe-right));
+    /* on a home-indicator iPhone the inset (34px) already gives room; don't stack another 10px on top */
+    bottom: max(10px, var(--safe-bottom)); z-index: 30;
     background: var(--paper); border-radius: 18px; padding: 6px;
     box-shadow: 0 1px 0 var(--edge), 0 10px 30px rgba(var(--shadow), 0.22);
   }
@@ -355,7 +371,7 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 
 .studyshell { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 .studytop {
-  display: flex; align-items: center; gap: 14px; padding: calc(14px + var(--safe-top)) 22px 10px; max-width: 980px; width: 100%; margin: 0 auto;
+  display: flex; align-items: center; gap: 14px; padding: calc(14px + var(--safe-top)) max(22px, var(--safe-right)) 10px max(22px, var(--safe-left)); max-width: 980px; width: 100%; margin: 0 auto;
 }
 .studytop .title { font-family: var(--font-display); font-style: italic; font-size: 19px; font-variation-settings: 'opsz' 48, 'SOFT' 100; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .studytop .live { margin-left: auto; display: flex; gap: 12px; font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
@@ -403,7 +419,8 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 @keyframes ink { from { opacity: 0; transform: translateY(6px); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
 
 .answerbar {
-  position: sticky; bottom: 0; width: 100%; padding: 18px 18px calc(22px + var(--safe-bottom));
+  position: sticky; bottom: 0; width: 100%;
+  padding: 18px max(18px, var(--safe-right)) max(22px, calc(10px + var(--safe-bottom))) max(18px, var(--safe-left));
   display: flex; justify-content: center;
   background: linear-gradient(180deg, transparent, var(--desk) 40%);
 }
@@ -560,9 +577,10 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 }
 .toast button { background: none; border: 0; color: var(--margin); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
 @keyframes toast { from { opacity: 0; transform: translate(-50%, 10px); } }
-.modal-back { position: fixed; inset: 0; z-index: 90; background: rgba(var(--shadow), 0.35); display: grid; place-items: center; padding: 16px; animation: fade 0.2s ease both; }
+.modal-back { position: fixed; inset: 0; z-index: 90; background: rgba(var(--shadow), 0.35); display: grid; place-items: center;
+  padding: calc(16px + var(--safe-top)) max(16px, var(--safe-right)) calc(16px + var(--safe-bottom)) max(16px, var(--safe-left)); animation: fade 0.2s ease both; }
 @keyframes fade { from { opacity: 0; } }
-.modal { width: 100%; max-width: 560px; max-height: 90vh; overflow: auto; padding: 28px; animation: deal 0.3s cubic-bezier(.2,.9,.25,1) both; }
+.modal { width: 100%; max-width: 560px; max-height: 90vh; max-height: calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom)); overflow: auto; padding: 28px; animation: deal 0.3s cubic-bezier(.2,.9,.25,1) both; }
 .modal h3 { font-family: var(--font-display); font-size: 24px; font-weight: 560; margin: 0 0 14px; }
 .empty { text-align: center; padding: 60px 20px; color: var(--ink-2); }
 .empty h3 { font-family: var(--font-display); font-style: italic; font-size: 28px; font-weight: 400; margin: 0 0 8px; color: var(--ink); font-variation-settings: 'opsz' 72, 'SOFT' 100; }
@@ -599,3 +617,13 @@ h2.section small { font-family: var(--font-mono); font-size: 12px; color: var(--
 .anki-skipped ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.6; }
 .anki-error { font-family: var(--font-mono); font-size: 13px; color: var(--learn); background: color-mix(in srgb, var(--learn) 9%, transparent); padding: 10px 12px; border-radius: var(--radius); }
 .media-missing { font-family: var(--font-mono); font-size: 0.75em; color: var(--ink-3); border: 1px dashed var(--ink-3); border-radius: var(--radius); padding: 0.1em 0.45em; }
+.tags-input { font-size: 14px; }
+
+/* iOS / iPadOS WebKit zooms the page when a focused field's text is under 16px; keep every field at 16px
+   or more there (any iOS WebKit, even with a trackpad) and on touch screens generally */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select, .input, .textarea, .select { font-size: max(16px, 1em); }
+}
+@media (pointer: coarse) {
+  input, textarea, select, .input, .textarea, .select { font-size: max(16px, 1em); }
+}

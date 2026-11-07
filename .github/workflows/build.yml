@@ -60,3 +60,29 @@ jobs:
         with:
           name: Ruled-Android
           path: release/*.apk
+
+  release:
+    needs: [macos, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with: { path: artifacts, merge-multiple: true }
+      - name: Name files
+        run: |
+          cd artifacts
+          for f in *.dmg; do mv "$f" "Ruled-macOS-universal.dmg"; done
+          ls -la
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Ruled 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            **macOS:** download `Ruled-macOS-universal.dmg`, drag Ruled to Applications. The app is unsigned: the first time, right-click → Open (or run `xattr -cr /Applications/Ruled.app`).
+            **Android:** download `Ruled.apk` and open it (allow installing unknown apps).
+          files: |
+            artifacts/Ruled-macOS-universal.dmg
+            artifacts/Ruled.apk
